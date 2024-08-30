@@ -1,200 +1,108 @@
 import pygame as pyg
 import random as rn
-import math as mt 
+import math as mt
 import time as tm
-#needed modules
 
+# Initialize Pygame
 pyg.init()
-icon = pyg.image.load('gameIcon.png') 
+
+# Load assets
+icon = pyg.image.load('gameIcon.png')
 p_avtr = pyg.image.load('mark.png')
 c_avtr = pyg.image.load('dollar.png')
 bg = pyg.image.load('grassbg.jpg')
 bmb_avtr = pyg.image.load('bomb.png')
-font = pyg.font.Font('Bear-Hug.ttf',32)
-#render images and fonts
+font = pyg.font.Font('Bear-Hug.ttf', 32)
 
-class window:
-    def __init__(self, wn, title, logo):
-        self.wn = pyg.display.set_mode((800,600))
-        self.title = pyg.display.set_caption("Mark the collector")
-        self.logo = pyg.display.set_icon(icon)
+# Window setup
+class Window:
+    def __init__(self):
+        self.wn = pyg.display.set_mode((800, 600))
+        pyg.display.set_caption("Mark the Collector")
+        pyg.display.set_icon(icon)
 
-screen = window("page","head","gameIcon")
+screen = Window()
 s1 = screen.wn
-#display setup
 
-class avatar:
-    def player(a,b):
-     s1.blit(p_avtr,(a,b))
+# Helper functions
+def draw_image(image, pos):
+    s1.blit(image, pos)
 
-pX = 400
-pY = 300
-pX_change = 0
-pY_change = 0
-#player setup
+def check_collision(x1, y1, x2, y2, threshold=35):
+    return mt.hypot(x1 - x2, y1 - y2) < threshold
 
-class dollar:
-    def coin(d,c):
-        s1.blit(c_avtr,(d,c))
+def should_switch_bomb_position(score):
+    return score % 2 == 0 or score % 3 == 0
 
-cX = rn.randint(0,738)
-cY = rn.randint(60,538)
-#coin setup
+def display_message(message, pos, color='green'):
+    msg = font.render(message, True, color)
+    s1.blit(msg, pos)
 
-class bomb:
-    def nuke(e,f):
-        s1.blit(bmb_avtr,(e,f))
-
-bX = rn.randint(80,738)
-bY = rn.randint(80,518)
-#bomb setup
-
-def collect(b1,b2,b3,b4):
-    x = abs(b1 - b3)
-    y = abs(b2 - b4)
-    dist = mt.sqrt(mt.pow(x,2) + mt.pow(y,2))
-    if dist < 35:
-        return True
-    else:
-        return False
-#pickup function    
-
-def pos(b1,b2,b3,b4):
-    x = abs(b1 - b3)
-    y = abs(b2 - b4)
-    dist = mt.sqrt(mt.pow(x,2) + mt.pow(y,2))
-    if dist < 64:
-        return True
-    else:
-        return False
-#coin and bomb uncertainity
-    
-def doom(b1,b2,b3,b4):
-    x = abs(b1 - b3)
-    y = abs(b2 - b4)
-    dist = mt.sqrt(mt.pow(x,2) + mt.pow(y,2))
-    if dist < 35:
-     return True
-    else:
-     return False
-#eplosion function
-    
-def swt(a):
-    if a%2 == 0 or a%3 == 0:
-        return True
-#bomb position change function 
-
+# Game variables
+pX, pY = 400, 300
+pX_change, pY_change = 0, 0
+cX, cY = rn.randint(0, 738), rn.randint(60, 538)
+bX, bY = rn.randint(80, 738), rn.randint(80, 518)
 score = 0
-tX = 300
-tY = 10
-def points(x,y):
-    scr = font.render('SCORE: ' + str(score), True, ('yellow'))
-    s1.blit(scr,(x,y))
-#score card function
+move_speed = 0.3
+game_over = False
+pause = False
 
-mX = 260
-mY = 300
-def msg(x,y):
-    gmsg = font.render('<--GAME OVER-->', True, ('green'))
-    s1.blit(gmsg,(x,y))
-#end game statement function
-
-rX = 350
-rY = 300
-def pmsg(x,y):
-   lag = font.render('PAUSE', True, ('blue'))
-   s1.blit(lag,(x,y))
-#pause game statement function
-                     
-run = True 
-move = 0.3
-cont = False
-play = True
-hold = False
-#variables for mainloop 
-
-#main loop
-while run:
+# Main loop
+while True:
     s1.fill('black')
-    s1.blit(bg,(0,0))
-    #screen loop
+    s1.blit(bg, (0, 0))
 
-    #keyboard binding
     for event in pyg.event.get():
         if event.type == pyg.QUIT:
-            run = False
-        #pause func
+            pyg.quit()
+            exit()
+
         if event.type == pyg.KEYDOWN:
-            if hold == False:
-             if event.key == pyg.K_SPACE:
-                hold = True
-                pX_change = 0
-                pY_change = 0
-                break
-            if hold == True:
-             if event.key == pyg.K_SPACE:
-                hold = False 
-            #movement func
-            if play and hold == False:
-             if event.key == pyg.K_UP or event.key == pyg.K_w:
-                pY_change = -move
-             if event.key == pyg.K_DOWN or event.key == pyg.K_s:
-                pY_change = move
-             if event.key == pyg.K_RIGHT or event.key == pyg.K_d:
-                pX_change = move
-             if event.key == pyg.K_LEFT or event.key == pyg.K_a:
-                pX_change = -move
-    #boundaries
-    if pX <= 0:
-        pX = 0
-    elif pX >= 738:
-        pX = 738
-    if pY <= 60:
-        pY = 60
-    elif pY >= 538:
-        pY = 538
-        
-    #move 
-    pX += pX_change
-    pY += pY_change
+            if event.key == pyg.K_SPACE:
+                pause = not pause
+                if pause:
+                    pX_change, pY_change = 0, 0
+            if not pause:
+                if event.key in {pyg.K_UP, pyg.K_w}:
+                    pY_change = -move_speed
+                if event.key in {pyg.K_DOWN, pyg.K_s}:
+                    pY_change = move_speed
+                if event.key in {pyg.K_RIGHT, pyg.K_d}:
+                    pX_change = move_speed
+                if event.key in {pyg.K_LEFT, pyg.K_a}:
+                    pX_change = -move_speed
 
-    #calling the functions
-    collect(pX,pY,cX,cY)
-    take = collect(pX,pY,cX,cY)
-    doom(pX,pY,bX,bY)
-    blst = doom(pX,pY,bX,bY)
-    pos(bX,bY,cX,cY)
-    chnge = pos(bX,bY,cX,cY)
+    # Update player position with boundaries
+    pX = max(0, min(pX + pX_change, 738))
+    pY = max(60, min(pY + pY_change, 538))
 
-    dollar.coin(cX,cY)
-    bomb.nuke(bX,bY)
-    avatar.player(pX,pY)
-    points(tX,tY)
-
-    if hold:
-       pmsg(rX,rY)
-
-    if take:
-        tm.sleep(0.02)
-        cX = rn.randint(0,738)
-        cY = rn.randint(60,538)
+    # Check collisions
+    if check_collision(pX, pY, cX, cY):
         score += 1
-        if swt(score):
-         bX = rn.randint(0,738)
-         bY = rn.randint(80,518)
-        if score%12 == 0:
-         move += 0.1
-    if chnge:
-        bX = rn.randint(0,738)
-        bY = rn.randint(80,518)
-    if blst:
-        cont = True
-    if cont:
-        msg(mX,mY)
-        play = False
-        pX_change = 0
-        pY_change = 0
-    
-    pyg.display.flip()
+        cX, cY = rn.randint(0, 738), rn.randint(60, 538)
+        if should_switch_bomb_position(score):
+            bX, bY = rn.randint(0, 738), rn.randint(80, 518)
+        if score % 12 == 0:
+            move_speed += 0.1
 
-pyg.quit()
+    if check_collision(pX, pY, bX, bY):
+        game_over = True
+
+    if check_collision(bX, bY, cX, cY, 64):
+        bX, bY = rn.randint(0, 738), rn.randint(80, 518)
+
+    # Draw everything
+    draw_image(c_avtr, (cX, cY))
+    draw_image(bmb_avtr, (bX, bY))
+    draw_image(p_avtr, (pX, pY))
+
+    display_message(f'SCORE: {score}', (300, 10), 'yellow')
+
+    if pause:
+        display_message('PAUSE', (350, 300), 'blue')
+    if game_over:
+        display_message('<--GAME OVER-->', (260, 300))
+        pause = True
+
+    pyg.display.flip()
